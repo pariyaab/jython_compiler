@@ -207,11 +207,59 @@ public class WalkAndDetect implements jythonListener {
 
     @Override
     public void enterMethodDec(jythonParser.MethodDecContext ctx) {
-
+        String id = ctx.ID().getText();
+        ArrayList<SymbolTableEntry> check = scope.recursiveLoopUp(id);
+        if (check != null) {
+            for (SymbolTableEntry s:
+                    check) {
+                if (s.getType().equals("Method")) {
+                    System.out.printf("ERROR[%d:%d]: method ID:[%s] has been defined already.\n", ctx.getStart().getLine(), ctx.getStart().getCharPositionInLine(), id);
+                }
+            }
+        }
+        Scope methodDeclScope = new Scope(ctx.getStart().getLine(), id, scope);
+        scope = methodDeclScope;
+        List<jythonParser.StatementContext> statements = ctx.statement();
+        List<jythonParser.ParameterContext> parameters = ctx.parameter();
+        if(statements.size() > 0){
+            for (jythonParser.StatementContext statement : statements) {
+                jythonParser.VarDecContext varDec = statement.varDec();
+                if (varDec != null) {
+                    TerminalNode def = ((varDec.CLASSNAME() == null) ? varDec.TYPE() : varDec.CLASSNAME());
+                    TerminalNode variableName = varDec.ID();
+                    SymbolTableEntry fieldDef = new FieldDecl("Field_" + variableName.getText(), variableName.getText(), 5, def.toString());
+                    scope.insert(((FieldDecl) fieldDef).getId(), fieldDef);
+                }
+            }
+        }
+        if(parameters.size() > 0){
+            int i =1;
+            for (jythonParser.ParameterContext parameter : parameters) {
+                List<jythonParser.VarDecContext> variableDecs = parameter.varDec();
+                if (variableDecs.size() > 1) {
+                    for (jythonParser.VarDecContext varDec : variableDecs) {
+                        TerminalNode def = ((varDec.CLASSNAME() == null) ? varDec.TYPE() : varDec.CLASSNAME());
+                        TerminalNode variableName = varDec.ID();
+                        SymbolTableEntry parameterDef = new ParameterDecl("Field_"+variableName.getText(),variableName.getText(),i,def.getText());
+                        i++;
+                        scope.insert(((ParameterDecl) parameterDef).getId(), parameterDef);
+                    }
+                } else {
+                    for (jythonParser.VarDecContext varDec : variableDecs) {
+                        TerminalNode def = ((varDec.CLASSNAME() == null) ? varDec.TYPE() : varDec.CLASSNAME());
+                        TerminalNode variableName = varDec.ID();
+                        SymbolTableEntry parameterDef = new ParameterDecl("Field_"+variableName.getText(),variableName.getText(),i,def.getText());
+                        scope.insert(((ParameterDecl) parameterDef).getId(), parameterDef);
+                    }
+                }
+            }
+        }
     }
 
     @Override
     public void exitMethodDec(jythonParser.MethodDecContext ctx) {
+        System.out.println(scope.toString());
+        scope = scope.getParent();
     }
 
     @Override

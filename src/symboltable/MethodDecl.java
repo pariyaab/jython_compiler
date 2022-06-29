@@ -20,7 +20,7 @@ public class MethodDecl extends SymbolTableEntry{
         params.add(new MethodParam(id, type));
     }
     public String setReturnType(){
-        if(!type.equals("bool") && !type.equals("int") && !type.equals("String") && !type.equals("void")){
+        if(!type.equals("bool") && !type.equals("int") && !type.equals("string") && !type.equals("void")){
             type = "class type = " + type;
         }
         return type;
