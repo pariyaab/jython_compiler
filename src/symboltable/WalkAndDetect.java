@@ -113,6 +113,7 @@ public class WalkAndDetect implements jythonListener {
             } else {
                 returnType = ((methodDec.CLASSNAME() == null) ? methodDec.TYPE().getText() : methodDec.CLASSNAME().getText());
             }
+
             ArrayList<SymbolTableEntry> check = scope.recursiveLoopUp(id);
             if (check != null) {
                 for (SymbolTableEntry s :
@@ -122,7 +123,7 @@ public class WalkAndDetect implements jythonListener {
                     }
                 }
             }
-            SymbolTableEntry methodDecl = new MethodDecl("Method_" + id, returnType, id);
+            SymbolTableEntry methodDef = new MethodDecl("Method_"+id, returnType, id);
 
             List<jythonParser.ParameterContext> parameters = methodDec.parameter();
             for (jythonParser.ParameterContext parameter : parameters) {
@@ -131,17 +132,17 @@ public class WalkAndDetect implements jythonListener {
                     for (jythonParser.VarDecContext varDec1 : variableDecs) {
                         TerminalNode def = ((varDec1.CLASSNAME() == null) ? varDec1.TYPE() : varDec1.CLASSNAME());
                         TerminalNode variableName = varDec1.ID();
-                        ((MethodDecl) methodDecl).addParam(variableName.getText(), def.getText());
+                        ((MethodDecl) methodDef).addParam(variableName.getText(), def.getText());
                     }
                 } else {
                     for (jythonParser.VarDecContext varDec1 : variableDecs) {
                         TerminalNode def = ((varDec1.CLASSNAME() == null) ? varDec1.TYPE() : varDec1.CLASSNAME());
                         TerminalNode variableName = varDec1.ID();
-                        ((MethodDecl) methodDecl).addParam(variableName.getText(), def.getText());
+                        ((MethodDecl) methodDef).addParam(variableName.getText(), def.getText());
                     }
                 }
             }
-            scope.insert(((MethodDecl) methodDecl).getId(), methodDecl);
+            scope.insert(((MethodDecl) methodDef).getId(),methodDef);
 
         }
     }
