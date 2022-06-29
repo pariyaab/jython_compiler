@@ -3,6 +3,7 @@ package symboltable;
 import gen.jythonListener;
 import gen.jythonParser;
 import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
@@ -14,6 +15,13 @@ public class WalkAndDetect implements jythonListener {
 
     Scope scope;
     private Stack<Boolean> isNested = new Stack<Boolean>();
+
+    private boolean isNested(RuleContext child) {
+        boolean isNested = false;
+        if (child instanceof jythonParser.While_statmentContext || child instanceof jythonParser.If_statmentContext || child instanceof jythonParser.For_statmentContext)
+            isNested = true;
+        return isNested;
+    }
 
     @Override
     public void enterProgram(jythonParser.ProgramContext ctx) {
@@ -124,7 +132,7 @@ public class WalkAndDetect implements jythonListener {
                     }
                 }
             }
-            SymbolTableEntry methodDef = new MethodDecl("Method_"+id, returnType, id);
+            SymbolTableEntry methodDef = new MethodDecl("Method_" + id, returnType, id);
 
             List<jythonParser.ParameterContext> parameters = methodDec.parameter();
             for (jythonParser.ParameterContext parameter : parameters) {
@@ -143,13 +151,13 @@ public class WalkAndDetect implements jythonListener {
                     }
                 }
             }
-            scope.insert(((MethodDecl) methodDef).getId(),methodDef);
+            scope.insert(((MethodDecl) methodDef).getId(), methodDef);
         }
-        if(constructorDec != null){
+        if (constructorDec != null) {
             String id = constructorDec.CLASSNAME().getText();
-            SymbolTableEntry constructorDef = new ConstructorDel("Constructor_"+id,id);
+            SymbolTableEntry constructorDef = new ConstructorDel("Constructor_" + id, id);
             List<jythonParser.ParameterContext> parameters = constructorDec.parameter();
-            if(parameters.size() > 0){
+            if (parameters.size() > 0) {
                 for (jythonParser.ParameterContext parameter : parameters) {
                     List<jythonParser.VarDecContext> variableDecs = parameter.varDec();
                     if (variableDecs.size() > 1) {
@@ -167,7 +175,7 @@ public class WalkAndDetect implements jythonListener {
                     }
                 }
             }
-            scope.insert(((ConstructorDel) constructorDef).getId(),constructorDef);
+            scope.insert(((ConstructorDel) constructorDef).getId(), constructorDef);
         }
     }
 
@@ -210,7 +218,7 @@ public class WalkAndDetect implements jythonListener {
         String id = ctx.ID().getText();
         ArrayList<SymbolTableEntry> check = scope.recursiveLoopUp(id);
         if (check != null) {
-            for (SymbolTableEntry s:
+            for (SymbolTableEntry s :
                     check) {
                 if (s.getType().equals("Method")) {
                     System.out.printf("ERROR[%d:%d]: method ID:[%s] has been defined already.\n", ctx.getStart().getLine(), ctx.getStart().getCharPositionInLine(), id);
@@ -221,7 +229,7 @@ public class WalkAndDetect implements jythonListener {
         scope = methodDeclScope;
         List<jythonParser.StatementContext> statements = ctx.statement();
         List<jythonParser.ParameterContext> parameters = ctx.parameter();
-        if(statements.size() > 0){
+        if (statements.size() > 0) {
             for (jythonParser.StatementContext statement : statements) {
                 jythonParser.VarDecContext varDec = statement.varDec();
                 if (varDec != null) {
@@ -232,15 +240,15 @@ public class WalkAndDetect implements jythonListener {
                 }
             }
         }
-        if(parameters.size() > 0){
-            int i =1;
+        if (parameters.size() > 0) {
+            int i = 1;
             for (jythonParser.ParameterContext parameter : parameters) {
                 List<jythonParser.VarDecContext> variableDecs = parameter.varDec();
                 if (variableDecs.size() > 1) {
                     for (jythonParser.VarDecContext varDec : variableDecs) {
                         TerminalNode def = ((varDec.CLASSNAME() == null) ? varDec.TYPE() : varDec.CLASSNAME());
                         TerminalNode variableName = varDec.ID();
-                        SymbolTableEntry parameterDef = new ParameterDecl("Field_"+variableName.getText(),variableName.getText(),i,def.getText());
+                        SymbolTableEntry parameterDef = new ParameterDecl("Field_" + variableName.getText(), variableName.getText(), i, def.getText());
                         i++;
                         scope.insert(((ParameterDecl) parameterDef).getId(), parameterDef);
                     }
@@ -248,7 +256,7 @@ public class WalkAndDetect implements jythonListener {
                     for (jythonParser.VarDecContext varDec : variableDecs) {
                         TerminalNode def = ((varDec.CLASSNAME() == null) ? varDec.TYPE() : varDec.CLASSNAME());
                         TerminalNode variableName = varDec.ID();
-                        SymbolTableEntry parameterDef = new ParameterDecl("Field_"+variableName.getText(),variableName.getText(),i,def.getText());
+                        SymbolTableEntry parameterDef = new ParameterDecl("Field_" + variableName.getText(), variableName.getText(), i, def.getText());
                         scope.insert(((ParameterDecl) parameterDef).getId(), parameterDef);
                     }
                 }
@@ -332,7 +340,6 @@ public class WalkAndDetect implements jythonListener {
 
     @Override
     public void exitIf_statment(jythonParser.If_statmentContext ctx) {
-
     }
 
     @Override
@@ -342,7 +349,8 @@ public class WalkAndDetect implements jythonListener {
 
     @Override
     public void exitWhile_statment(jythonParser.While_statmentContext ctx) {
-
+//        System.out.println(scope.toString());
+//        scope = scope.getParent();
     }
 
     @Override
