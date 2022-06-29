@@ -11,10 +11,6 @@ public class ClassDecl extends SymbolTableEntry{
         this.parent = "";
         super.setType("class");
     }
-    public ClassDecl(String id) {
-        this.id = id;
-        super.setType("constructor");
-    }
     public String getId() {
         return id;
     }

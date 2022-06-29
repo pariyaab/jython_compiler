@@ -84,6 +84,7 @@ public class WalkAndDetect implements jythonListener {
         jythonParser.VarDecContext varDec = ctx.varDec();
         jythonParser.ArrayDecContext arrayDec = ctx.arrayDec();
         jythonParser.MethodDecContext methodDec = ctx.methodDec();
+        jythonParser.ConstructorContext constructorDec = ctx.constructor();
         int type = 3;
         if (varDec != null) {
             TerminalNode def = ((varDec.CLASSNAME() == null) ? varDec.TYPE() : varDec.CLASSNAME());
@@ -143,7 +144,30 @@ public class WalkAndDetect implements jythonListener {
                 }
             }
             scope.insert(((MethodDecl) methodDef).getId(),methodDef);
-
+        }
+        if(constructorDec != null){
+            String id = constructorDec.CLASSNAME().getText();
+            SymbolTableEntry constructorDef = new ConstructorDel("Constructor_"+id,id);
+            List<jythonParser.ParameterContext> parameters = constructorDec.parameter();
+            if(parameters.size() > 0){
+                for (jythonParser.ParameterContext parameter : parameters) {
+                    List<jythonParser.VarDecContext> variableDecs = parameter.varDec();
+                    if (variableDecs.size() > 1) {
+                        for (jythonParser.VarDecContext varDec1 : variableDecs) {
+                            TerminalNode def = ((varDec1.CLASSNAME() == null) ? varDec1.TYPE() : varDec1.CLASSNAME());
+                            TerminalNode variableName = varDec1.ID();
+                            ((ConstructorDel) constructorDef).addParam(variableName.getText(), def.getText());
+                        }
+                    } else {
+                        for (jythonParser.VarDecContext varDec1 : variableDecs) {
+                            TerminalNode def = ((varDec1.CLASSNAME() == null) ? varDec1.TYPE() : varDec1.CLASSNAME());
+                            TerminalNode variableName = varDec1.ID();
+                            ((ConstructorDel) constructorDef).addParam(variableName.getText(), def.getText());
+                        }
+                    }
+                }
+            }
+            scope.insert(((ConstructorDel) constructorDef).getId(),constructorDef);
         }
     }
 
