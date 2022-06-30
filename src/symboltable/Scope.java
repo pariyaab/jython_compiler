@@ -5,6 +5,9 @@ import java.util.ArrayList;
 public class Scope {
     private Scope parent;
     private String id;
+
+
+
     private SymbolTable symbolTable = new SymbolTable();
     int scopeNumber;
     public Scope(){
@@ -19,7 +22,9 @@ public class Scope {
         this.parent = parent;
         this.id = id;
     }
-
+    public SymbolTable getSymbolTable() {
+        return symbolTable;
+    }
     public void insert(String idefName, SymbolTableEntry attributes) {
         symbolTable.insert(idefName, attributes);
     }
@@ -48,9 +53,10 @@ public class Scope {
         if (parent == null && temp == null) {
             return null;
         }
-        if (temp == null) {
+        else if (temp == null) {
             return recursiveLoopUpHelper(idefName, parent);
         } else {
+
             return temp;
         }
     }

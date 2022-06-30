@@ -52,15 +52,6 @@ public class WalkAndDetect implements jythonListener {
     public void enterClassDef(jythonParser.ClassDefContext ctx) {
         String id = ctx.CLASSNAME(0).getText();
         List<TerminalNode> classNames = ctx.CLASSNAME();
-        ArrayList<SymbolTableEntry> check = scope.recursiveLoopUp(id);
-        if (check != null) {
-            for (SymbolTableEntry s :
-                    check) {
-                if (s.getType().equals("class")) {
-                    System.out.printf("ERROR[%d:%d]: chosen ID:[%s] for class had already been used.\n", ctx.getStart().getLine(), ctx.getStart().getCharPositionInLine(), id);
-                }
-            }
-        }
         Scope classDelScope = new Scope(ctx.getStart().getLine(), id, scope);
         String parentsName = "";
         if (classNames.size() > 1) {
@@ -89,94 +80,7 @@ public class WalkAndDetect implements jythonListener {
 
     @Override
     public void enterClass_body(jythonParser.Class_bodyContext ctx) {
-        jythonParser.VarDecContext varDec = ctx.varDec();
-        jythonParser.ArrayDecContext arrayDec = ctx.arrayDec();
-        jythonParser.MethodDecContext methodDec = ctx.methodDec();
-        jythonParser.ConstructorContext constructorDec = ctx.constructor();
-        int type = 3;
-        if (varDec != null) {
-            TerminalNode def = ((varDec.CLASSNAME() == null) ? varDec.TYPE() : varDec.CLASSNAME());
-            TerminalNode variableName = varDec.ID();
-            if (!def.getText().equals("int") && !def.getText().equals("bool") && !def.getText().equals("string")) {
-                type = 1;
-            }
-            SymbolTableEntry fieldDef = new FieldDecl("Field_" + variableName.getText(), variableName.getText(), type, def.toString());
-            scope.insert(((FieldDecl) fieldDef).getId(), fieldDef);
 
-        }
-        if (arrayDec != null) {
-            TerminalNode def = ((arrayDec.CLASSNAME() == null) ? arrayDec.TYPE() : arrayDec.CLASSNAME());
-            TerminalNode variableName = arrayDec.ID();
-            if (!def.getText().equals("int") && !def.getText().equals("bool") && !def.getText().equals("string")) {
-                type = 2;
-            }
-            SymbolTableEntry fieldDef = new FieldDecl("Field_" + variableName.getText(), variableName.getText(), type, def.toString());
-            scope.insert(((FieldDecl) fieldDef).getId(), fieldDef);
-        }
-        if (methodDec != null) {
-
-            String id = methodDec.ID().getText();
-            String returnType = "";
-            if (methodDec.CLASSNAME() == null && methodDec.TYPE() == null) {
-                returnType = "void";
-            } else {
-                returnType = ((methodDec.CLASSNAME() == null) ? methodDec.TYPE().getText() : methodDec.CLASSNAME().getText());
-            }
-
-            ArrayList<SymbolTableEntry> check = scope.recursiveLoopUp(id);
-            if (check != null) {
-                for (SymbolTableEntry s :
-                        check) {
-                    if (s.getType().equals("Method")) {
-                        System.out.printf("ERROR[%d:%d]: chosen ID:[%s] for class method had already been used.\n", ctx.getStart().getLine(), ctx.getStart().getCharPositionInLine(), id);
-                    }
-                }
-            }
-            SymbolTableEntry methodDef = new MethodDecl("Method_" + id, returnType, id);
-
-            List<jythonParser.ParameterContext> parameters = methodDec.parameter();
-            for (jythonParser.ParameterContext parameter : parameters) {
-                List<jythonParser.VarDecContext> variableDecs = parameter.varDec();
-                if (variableDecs.size() > 1) {
-                    for (jythonParser.VarDecContext varDec1 : variableDecs) {
-                        TerminalNode def = ((varDec1.CLASSNAME() == null) ? varDec1.TYPE() : varDec1.CLASSNAME());
-                        TerminalNode variableName = varDec1.ID();
-                        ((MethodDecl) methodDef).addParam(variableName.getText(), def.getText());
-                    }
-                } else {
-                    for (jythonParser.VarDecContext varDec1 : variableDecs) {
-                        TerminalNode def = ((varDec1.CLASSNAME() == null) ? varDec1.TYPE() : varDec1.CLASSNAME());
-                        TerminalNode variableName = varDec1.ID();
-                        ((MethodDecl) methodDef).addParam(variableName.getText(), def.getText());
-                    }
-                }
-            }
-            scope.insert(((MethodDecl) methodDef).getId(), methodDef);
-        }
-        if (constructorDec != null) {
-            String id = constructorDec.CLASSNAME().getText();
-            SymbolTableEntry constructorDef = new ConstructorDel("Constructor_" + id, id);
-            List<jythonParser.ParameterContext> parameters = constructorDec.parameter();
-            if (parameters.size() > 0) {
-                for (jythonParser.ParameterContext parameter : parameters) {
-                    List<jythonParser.VarDecContext> variableDecs = parameter.varDec();
-                    if (variableDecs.size() > 1) {
-                        for (jythonParser.VarDecContext varDec1 : variableDecs) {
-                            TerminalNode def = ((varDec1.CLASSNAME() == null) ? varDec1.TYPE() : varDec1.CLASSNAME());
-                            TerminalNode variableName = varDec1.ID();
-                            ((ConstructorDel) constructorDef).addParam(variableName.getText(), def.getText());
-                        }
-                    } else {
-                        for (jythonParser.VarDecContext varDec1 : variableDecs) {
-                            TerminalNode def = ((varDec1.CLASSNAME() == null) ? varDec1.TYPE() : varDec1.CLASSNAME());
-                            TerminalNode variableName = varDec1.ID();
-                            ((ConstructorDel) constructorDef).addParam(variableName.getText(), def.getText());
-                        }
-                    }
-                }
-            }
-            scope.insert(((ConstructorDel) constructorDef).getId(), constructorDef);
-        }
     }
 
     @Override
@@ -187,15 +91,19 @@ public class WalkAndDetect implements jythonListener {
     @Override
     public void enterVarDec(jythonParser.VarDecContext ctx) {
         String id = ctx.ID().getText();
-        ArrayList<SymbolTableEntry> check = scope.recursiveLoopUp(id);
+        ArrayList<SymbolTableEntry> check = scope.recursiveLoopUp("Field_"+id);
         if (check != null) {
-            for (SymbolTableEntry s :
-                    check) {
-                if (s.getType().equals("Field")) {
-                    System.out.printf("ERROR[%d:%d]: chosen ID:[%s] for class variable had already been used.\n", ctx.getStart().getLine(), ctx.getStart().getCharPositionInLine(), id);
-                }
-            }
+            System.out.printf("ERROR[%d:%d]: chosen ID:[%s] for field method had defined already.\n", ctx.getStart().getLine(), ctx.getStart().getCharPositionInLine(), id);
+            System.exit(1);
         }
+        int type =3;
+        TerminalNode def = ((ctx.CLASSNAME() == null) ? ctx.TYPE() : ctx.CLASSNAME());
+        TerminalNode variableName = ctx.ID();
+        if (!def.getText().equals("int") && !def.getText().equals("bool") && !def.getText().equals("string")) {
+            type = 1;
+        }
+        SymbolTableEntry fieldDef = new FieldDecl("Field_" + variableName.getText(), variableName.getText(), type, def.toString());
+        scope.insert(((FieldDecl) fieldDef).getId(), fieldDef);
     }
 
     @Override
@@ -205,7 +113,14 @@ public class WalkAndDetect implements jythonListener {
 
     @Override
     public void enterArrayDec(jythonParser.ArrayDecContext ctx) {
-
+        TerminalNode def = ((ctx.CLASSNAME() == null) ? ctx.TYPE() : ctx.CLASSNAME());
+        TerminalNode variableName = ctx.ID();
+        int type = 3;
+        if (!def.getText().equals("int") && !def.getText().equals("bool") && !def.getText().equals("string")) {
+            type = 2;
+        }
+        SymbolTableEntry fieldDef = new FieldDecl("Field_" + variableName.getText(), variableName.getText(), type, def.toString());
+        scope.insert(((FieldDecl) fieldDef).getId(), fieldDef);
     }
 
     @Override
@@ -215,20 +130,41 @@ public class WalkAndDetect implements jythonListener {
 
     @Override
     public void enterMethodDec(jythonParser.MethodDecContext ctx) {
+
         String id = ctx.ID().getText();
-        ArrayList<SymbolTableEntry> check = scope.recursiveLoopUp(id);
+        ArrayList<SymbolTableEntry> check = scope.recursiveLoopUp("Method_"+id);
         if (check != null) {
-            for (SymbolTableEntry s :
-                    check) {
-                if (s.getType().equals("Method")) {
-                    System.out.printf("ERROR[%d:%d]: method ID:[%s] has been defined already.\n", ctx.getStart().getLine(), ctx.getStart().getCharPositionInLine(), id);
+            System.out.printf("ERROR[%d:%d]: chosen ID:[%s] for class method has been defined already.\n", ctx.getStart().getLine(), ctx.getStart().getCharPositionInLine(), id);
+            System.exit(1);
+      }
+        String returnType = "";
+        if (ctx.CLASSNAME() == null && ctx.TYPE() == null) {
+            returnType = "void";
+        } else {
+            returnType = ((ctx.CLASSNAME() == null) ? ctx.TYPE().getText() : ctx.CLASSNAME().getText());
+        }
+        SymbolTableEntry methodDef = new MethodDecl("Method_" + id, returnType, id);
+        List<jythonParser.ParameterContext> parameters = ctx.parameter();
+        for (jythonParser.ParameterContext parameter : parameters) {
+            List<jythonParser.VarDecContext> variableDecs = parameter.varDec();
+            if (variableDecs.size() > 1) {
+                for (jythonParser.VarDecContext varDec1 : variableDecs) {
+                    TerminalNode def = ((varDec1.CLASSNAME() == null) ? varDec1.TYPE() : varDec1.CLASSNAME());
+                    TerminalNode variableName = varDec1.ID();
+                    ((MethodDecl) methodDef).addParam(variableName.getText(), def.getText());
+                }
+            } else {
+                for (jythonParser.VarDecContext varDec1 : variableDecs) {
+                    TerminalNode def = ((varDec1.CLASSNAME() == null) ? varDec1.TYPE() : varDec1.CLASSNAME());
+                    TerminalNode variableName = varDec1.ID();
+                    ((MethodDecl) methodDef).addParam(variableName.getText(), def.getText());
                 }
             }
         }
+        scope.insert(((MethodDecl) methodDef).getId(), methodDef);
         Scope methodDeclScope = new Scope(ctx.getStart().getLine(), id, scope);
         scope = methodDeclScope;
         List<jythonParser.StatementContext> statements = ctx.statement();
-        List<jythonParser.ParameterContext> parameters = ctx.parameter();
         if (statements.size() > 0) {
             for (jythonParser.StatementContext statement : statements) {
                 jythonParser.VarDecContext varDec = statement.varDec();
@@ -273,6 +209,28 @@ public class WalkAndDetect implements jythonListener {
     @Override
     public void enterConstructor(jythonParser.ConstructorContext ctx) {
         String id = ctx.CLASSNAME().getText();
+        SymbolTableEntry constructorDef = new ConstructorDel("Constructor_" + id, id);
+        List<jythonParser.ParameterContext> parameters = ctx.parameter();
+        if (parameters.size() > 0) {
+            for (jythonParser.ParameterContext parameter : parameters) {
+                List<jythonParser.VarDecContext> variableDecs = parameter.varDec();
+                if (variableDecs.size() > 1) {
+                    for (jythonParser.VarDecContext varDec1 : variableDecs) {
+                        TerminalNode def = ((varDec1.CLASSNAME() == null) ? varDec1.TYPE() : varDec1.CLASSNAME());
+                        TerminalNode variableName = varDec1.ID();
+                        ((ConstructorDel) constructorDef).addParam(variableName.getText(), def.getText());
+                    }
+                } else {
+                    for (jythonParser.VarDecContext varDec1 : variableDecs) {
+                        TerminalNode def = ((varDec1.CLASSNAME() == null) ? varDec1.TYPE() : varDec1.CLASSNAME());
+                        TerminalNode variableName = varDec1.ID();
+                        ((ConstructorDel) constructorDef).addParam(variableName.getText(), def.getText());
+                    }
+                }
+            }
+        }
+
+        scope.insert(((ConstructorDel) constructorDef).getId(), constructorDef);
         Scope classDelScope = new Scope(ctx.getStart().getLine(), id, scope);
         scope = classDelScope;
     }
@@ -335,7 +293,7 @@ public class WalkAndDetect implements jythonListener {
 
     @Override
     public void enterIf_statment(jythonParser.If_statmentContext ctx) {
-
+        System.out.println(ctx.getRuleIndex());
     }
 
     @Override
@@ -344,13 +302,33 @@ public class WalkAndDetect implements jythonListener {
 
     @Override
     public void enterWhile_statment(jythonParser.While_statmentContext ctx) {
+        Scope whileStatementScope = new Scope(ctx.getStart().getLine(), "while", scope);
+        scope = whileStatementScope;
+        List<jythonParser.StatementContext> statements = ctx.statement();
+        boolean isNested;
+        if (statements.size() > 0) {
+            for (jythonParser.StatementContext statement : statements) {
 
+                RuleContext ifChild = statement.getRuleContext();
+                isNested = isNested(ifChild);
+                if (isNested) {
+                    System.out.println("hello");
+                }
+                jythonParser.VarDecContext varDec = statement.varDec();
+                if (varDec != null) {
+                    TerminalNode def = ((varDec.CLASSNAME() == null) ? varDec.TYPE() : varDec.CLASSNAME());
+                    TerminalNode variableName = varDec.ID();
+                    SymbolTableEntry fieldDef = new FieldDecl("Field_" + variableName.getText(), variableName.getText(), 5, def.toString());
+                    scope.insert(((FieldDecl) fieldDef).getId(), fieldDef);
+                }
+            }
+        }
     }
 
     @Override
     public void exitWhile_statment(jythonParser.While_statmentContext ctx) {
-//        System.out.println(scope.toString());
-//        scope = scope.getParent();
+        System.out.println(scope.toString());
+        scope = scope.getParent();
     }
 
     @Override

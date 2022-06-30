@@ -11,6 +11,7 @@ class Human(Nothing, Nothing2){
         self.nose = n
     }
     def Voice speak(){
+        Nose nose
         Voice voice
         return voice
     }
