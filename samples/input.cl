@@ -14,6 +14,12 @@ class Human(Nothing, Nothing2){
         Voice voice
         return voice
     }
+    def bool checkIsHungry(){
+            return true
+    }
+    def void main(Food food){
+          Animal animal
+    }
     def void eat(Food food, int c){
         calories += c
         newFood = food
@@ -23,10 +29,5 @@ class Human(Nothing, Nothing2){
             self.isHungry = self.checkIsHungry()
         }
     }
-    def bool checkIsHungry(){
-        return true
-    }
-    def void main(Food food){
-        Animal animal
-    }
+
 }
