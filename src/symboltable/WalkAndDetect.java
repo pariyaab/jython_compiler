@@ -14,25 +14,19 @@ import java.util.Stack;
 public class WalkAndDetect implements jythonListener {
 
     Scope scope;
-    private Stack<Boolean> isNested = new Stack<Boolean>();
-    private boolean isNested(RuleContext child) {
-        boolean isNested = false;
-        if (child instanceof jythonParser.While_statmentContext || child instanceof jythonParser.If_statmentContext || child instanceof jythonParser.For_statmentContext)
-            isNested = true;
-        return isNested;
-    }
+    boolean isNestedVariable = false;
 
     @Override
     public void enterProgram(jythonParser.ProgramContext ctx) {
         Scope enterProgramScope = new Scope(ctx.getStart().getLine(), "program", null);
         scope = enterProgramScope;
-        isNested.push(false);
+
     }
 
     @Override
     public void exitProgram(jythonParser.ProgramContext ctx) {
         System.out.println(scope.toString());
-        isNested.pop();
+
     }
 
     @Override
@@ -90,15 +84,15 @@ public class WalkAndDetect implements jythonListener {
     @Override
     public void enterVarDec(jythonParser.VarDecContext ctx) {
         String id = ctx.ID().getText();
-        ArrayList<SymbolTableEntry> check = scope.lookUp("Field_"+id);
+        ArrayList<SymbolTableEntry> check = scope.lookUp("Field_" + id);
         if (check != null && !check.get(0).getType().equals("Parameter")) {
             System.out.println(scope.scopeNumber);
-            System.out.println(scope.getSymbolTable().printItems() +" "+ id);
+            System.out.println(scope.getSymbolTable().printItems() + " " + id);
             System.out.println(check.get(0).getType());
             System.out.printf("ERROR[%d:%d]: chosen ID:[%s] for field has defined already.\n", ctx.getStart().getLine(), ctx.getStart().getCharPositionInLine(), id);
             System.exit(1);
         }
-        int type =3;
+        int type = 3;
         TerminalNode def = ((ctx.CLASSNAME() == null) ? ctx.TYPE() : ctx.CLASSNAME());
         if (!def.getText().equals("int") && !def.getText().equals("bool") && !def.getText().equals("string")) {
             type = 1;
@@ -133,11 +127,11 @@ public class WalkAndDetect implements jythonListener {
     public void enterMethodDec(jythonParser.MethodDecContext ctx) {
 
         String id = ctx.ID().getText();
-        ArrayList<SymbolTableEntry> check = scope.recursiveLoopUp("Method_"+id);
+        ArrayList<SymbolTableEntry> check = scope.recursiveLoopUp("Method_" + id);
         if (check != null) {
             System.out.printf("ERROR[%d:%d]: chosen ID:[%s] for method has been defined already.\n", ctx.getStart().getLine(), ctx.getStart().getCharPositionInLine(), id);
             System.exit(1);
-      }
+        }
         String returnType = "";
         if (ctx.CLASSNAME() == null && ctx.TYPE() == null) {
             returnType = "void";
@@ -281,36 +275,77 @@ public class WalkAndDetect implements jythonListener {
 
     @Override
     public void enterIf_statment(jythonParser.If_statmentContext ctx) {
-        System.out.println(ctx.getRuleIndex());
+        if (isNestedVariable) {
+            Scope ifStatementScope = new Scope(ctx.getStart().getLine(), "nested", scope);
+            scope = ifStatementScope;
+        } else {
+            Scope ifStatementScope = new Scope(ctx.getStart().getLine(), "if", scope);
+            scope = ifStatementScope;
+            List<jythonParser.StatementContext> statement = ctx.statement();
+            for (jythonParser.StatementContext smt : statement) {
+                if (smt.children.contains(smt.if_statment()) || smt.children.contains(smt.while_statment()) || smt.children.contains(smt.for_statment()) || smt.children.contains(smt.if_else_statment()))
+                {
+                    isNestedVariable = true;
+                }
+            }
+        }
     }
 
     @Override
     public void exitIf_statment(jythonParser.If_statmentContext ctx) {
+        System.out.println(scope.toString());
+        isNestedVariable = false;
+        scope = scope.getParent();
     }
 
     @Override
     public void enterWhile_statment(jythonParser.While_statmentContext ctx) {
-        Scope whileStatementScope = new Scope(ctx.getStart().getLine(), "while", scope);
-        scope = whileStatementScope;
-//        System.out.println(ctx.getParent().getRuleContext().toString());
-        boolean isNested;
-
+        if (isNestedVariable) {
+            Scope whileStatementScope = new Scope(ctx.getStart().getLine(), "nested", scope);
+            scope = whileStatementScope;
+        } else {
+            Scope whileStatementScope = new Scope(ctx.getStart().getLine(), "while", scope);
+            scope = whileStatementScope;
+            List<jythonParser.StatementContext> statement = ctx.statement();
+            for (jythonParser.StatementContext smt : statement) {
+                if (smt.children.contains(smt.if_statment()) || smt.children.contains(smt.while_statment()) || smt.children.contains(smt.for_statment()) || smt.children.contains(smt.if_else_statment()))
+                {
+                    isNestedVariable = true;
+                }
+            }
+        }
     }
 
     @Override
     public void exitWhile_statment(jythonParser.While_statmentContext ctx) {
         System.out.println(scope.toString());
+        isNestedVariable = false;
         scope = scope.getParent();
     }
 
     @Override
     public void enterIf_else_statment(jythonParser.If_else_statmentContext ctx) {
-
+        if (isNestedVariable) {
+            Scope ifElseStatementScope = new Scope(ctx.getStart().getLine(), "nested", scope);
+            scope = ifElseStatementScope;
+        } else {
+            Scope ifElseStatementScope = new Scope(ctx.getStart().getLine(), "if-else", scope);
+            scope = ifElseStatementScope;
+            List<jythonParser.StatementContext> statement = ctx.statement();
+            for (jythonParser.StatementContext smt : statement) {
+                if (smt.children.contains(smt.while_statment()) || smt.children.contains(smt.if_statment()) || smt.children.contains(smt.for_statment()) || smt.children.contains(smt.if_else_statment()))
+                {
+                    isNestedVariable = true;
+                }
+            }
+        }
     }
 
     @Override
     public void exitIf_else_statment(jythonParser.If_else_statmentContext ctx) {
-
+        System.out.println(scope.toString());
+        isNestedVariable = false;
+        scope = scope.getParent();
     }
 
     @Override
@@ -325,12 +360,27 @@ public class WalkAndDetect implements jythonListener {
 
     @Override
     public void enterFor_statment(jythonParser.For_statmentContext ctx) {
-
+        if (isNestedVariable) {
+            Scope forStatementScope = new Scope(ctx.getStart().getLine(), "nested", scope);
+            scope = forStatementScope;
+        } else {
+            Scope forStatementScope = new Scope(ctx.getStart().getLine(), "for", scope);
+            scope = forStatementScope;
+            List<jythonParser.StatementContext> statement = ctx.statement();
+            for (jythonParser.StatementContext smt : statement) {
+                if (smt.children.contains(smt.while_statment()) || smt.children.contains(smt.if_statment()) || smt.children.contains(smt.for_statment()) || smt.children.contains(smt.if_else_statment()))
+                {
+                    isNestedVariable = true;
+                }
+            }
+        }
     }
 
     @Override
     public void exitFor_statment(jythonParser.For_statmentContext ctx) {
-
+        System.out.println(scope.toString());
+        isNestedVariable = false;
+        scope = scope.getParent();
     }
 
     @Override

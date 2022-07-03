@@ -29,5 +29,6 @@ public class compiler {
         ParseTreeWalker walker = new ParseTreeWalker();
         jythonListener listener = new ProgramPrinterTest();
         walker.walk(walkAndDetect,tree);
+//        walker.walk(listener,tree);
     }
 }

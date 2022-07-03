@@ -13,6 +13,10 @@ public class SymbolTable {
             temp.add(attributes);
             hashtable.put(identifierName, temp);
         }
+        else {
+            String newName = identifierName + "duplicate";
+            hashtable.put(newName, temp);
+        }
     }
 
     public ArrayList<SymbolTableEntry> lookUp(String idefName) {

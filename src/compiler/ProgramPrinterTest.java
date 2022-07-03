@@ -5,6 +5,7 @@ import gen.jythonParser;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
+import symboltable.Scope;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,6 +14,8 @@ import java.util.List;
 public class ProgramPrinterTest implements jythonListener {
 
     String tabString = "    ";
+    boolean isNestedVariable = false;
+
 
     @Override
     public void enterProgram(jythonParser.ProgramContext ctx) {
@@ -251,32 +254,62 @@ public class ProgramPrinterTest implements jythonListener {
 
     @Override
     public void enterIf_statment(jythonParser.If_statmentContext ctx) {
-
+        if (isNestedVariable) {
+            System.out.println(tabString + tabString + "nested statement " + "{");
+        } else {
+            List<jythonParser.StatementContext> statement = ctx.statement();
+            for (jythonParser.StatementContext smt : statement) {
+                if (smt.children.contains(smt.while_statment()) || smt.children.contains(smt.if_statment()) || smt.children.contains(smt.for_statment()) || smt.children.contains(smt.if_else_statment()))
+                {
+                    isNestedVariable = true;
+                }
+            }
+        }
     }
 
     @Override
     public void exitIf_statment(jythonParser.If_statmentContext ctx) {
-
+        System.out.println(tabString + tabString + "}");
     }
 
     @Override
     public void enterWhile_statment(jythonParser.While_statmentContext ctx) {
-
+        if (isNestedVariable) {
+            System.out.println(tabString + tabString + "nested statement " + "{");
+        } else {
+            List<jythonParser.StatementContext> statement = ctx.statement();
+            for (jythonParser.StatementContext smt : statement) {
+                if (smt.children.contains(smt.while_statment()) || smt.children.contains(smt.if_statment()) || smt.children.contains(smt.for_statment()) || smt.children.contains(smt.if_else_statment()))
+                {
+                    isNestedVariable = true;
+                }
+            }
+        }
     }
 
     @Override
     public void exitWhile_statment(jythonParser.While_statmentContext ctx) {
-
+        System.out.println(tabString + tabString + "}");
     }
 
     @Override
     public void enterIf_else_statment(jythonParser.If_else_statmentContext ctx) {
-
+        if (isNestedVariable) {
+            System.out.println(tabString + tabString + "nested statement " + "{");
+        } else {
+            List<jythonParser.StatementContext> statement = ctx.statement();
+            for (jythonParser.StatementContext smt : statement) {
+                if (smt.children.contains(smt.while_statment()) || smt.children.contains(smt.if_statment()) || smt.children.contains(smt.for_statment()) || smt.children.contains(smt.if_else_statment()))
+                {
+                    isNestedVariable = true;
+                }
+            }
+        }
     }
 
     @Override
     public void exitIf_else_statment(jythonParser.If_else_statmentContext ctx) {
-
+        System.out.println(tabString + tabString + "}");
     }
 
     @Override

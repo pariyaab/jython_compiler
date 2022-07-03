@@ -12,7 +12,6 @@ class Human(Nothing, Nothing2){
     }
     def Voice speak(){
         Voice voice
-
         return voice
     }
     def bool checkIsHungry(){
@@ -27,7 +26,7 @@ class Human(Nothing, Nothing2){
         Drink water
         while(self.isHungry){
             Food newFood = Food()
-            if(1){
+            if(i == 2){
                 int a
             }
             eat(newFood)
